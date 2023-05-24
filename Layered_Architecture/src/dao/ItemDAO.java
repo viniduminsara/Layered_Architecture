@@ -21,6 +21,4 @@ public interface ItemDAO {
     ItemDTO getItem(String newItemCode) throws SQLException, ClassNotFoundException;
 
     ArrayList<String> getItemIds() throws SQLException, ClassNotFoundException;
-
-    boolean updateItemQty(ItemDTO item) throws SQLException, ClassNotFoundException;
 }
