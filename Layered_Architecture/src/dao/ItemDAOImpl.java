@@ -88,7 +88,8 @@ public class ItemDAOImpl {
         return items;
     }
 
-    public static boolean updateItemQty(Connection connection, ItemDTO item) throws SQLException {
+    public static boolean updateItemQty(ItemDTO item) throws SQLException, ClassNotFoundException {
+        Connection connection = DBConnection.getDbConnection().getConnection();
         PreparedStatement pstm = connection.prepareStatement("UPDATE Item SET description=?, unitPrice=?, qtyOnHand=? WHERE code=?");
         pstm.setString(1, item.getDescription());
         pstm.setBigDecimal(2, item.getUnitPrice());

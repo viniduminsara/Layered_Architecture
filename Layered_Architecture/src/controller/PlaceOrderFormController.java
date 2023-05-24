@@ -6,6 +6,7 @@ import com.jfoenix.controls.JFXTextField;
 import dao.CustomerDAOImpl;
 import dao.ItemDAOImpl;
 import dao.OrderDAOImpl;
+import dao.OrderDetailsDAOImpl;
 import db.DBConnection;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -284,7 +285,7 @@ public class PlaceOrderFormController {
     }
 
     public void btnPlaceOrder_OnAction(ActionEvent actionEvent) {
-        boolean b = OrderDAOImpl.placeOrder(orderId, LocalDate.now(), cmbCustomerId.getValue(),
+        boolean b = placeOrder(orderId, LocalDate.now(), cmbCustomerId.getValue(),
                 tblOrderDetails.getItems().stream().map(tm -> new OrderDetailDTO(tm.getCode(), tm.getQty(), tm.getUnitPrice())).collect(Collectors.toList()));
 
         if (b) {
@@ -300,5 +301,59 @@ public class PlaceOrderFormController {
         tblOrderDetails.getItems().clear();
         txtQty.clear();
         calculateTotal();
+    }
+
+    public static boolean placeOrder(String orderId, LocalDate orderDate, String customerId, List<OrderDetailDTO> orderDetails) {
+        /*Transaction*/
+        Connection connection = null;
+        try {
+            connection = DBConnection.getDbConnection().getConnection();
+
+            /*if order id already exist*/
+            if (OrderDAOImpl.existsOrder(orderId)) {
+                return false;
+            }
+
+            connection.setAutoCommit(false);
+            boolean isSaved = OrderDAOImpl.saveOrder(orderId,orderDate,customerId);
+
+            if (!isSaved) {
+                connection.rollback();
+                connection.setAutoCommit(true);
+                return false;
+            }
+
+            for (OrderDetailDTO detail : orderDetails) {
+
+                boolean isDetailsSaved = OrderDetailsDAOImpl.saveOrderDetails(orderId,detail.getItemCode(),detail.getUnitPrice(),detail.getQty());
+                if (!isDetailsSaved) {
+                    connection.rollback();
+                    connection.setAutoCommit(true);
+                    return false;
+                }
+//                //Search & Update Item
+                ItemDTO item = ItemDAOImpl.getItem(detail.getItemCode());
+                if (item != null) {
+                    item.setQtyOnHand(item.getQtyOnHand() - detail.getQty());
+                    boolean isUpdated = ItemDAOImpl.updateItemQty(item);
+
+                    if (!isUpdated) {
+                        connection.rollback();
+                        connection.setAutoCommit(true);
+                        return false;
+                    }
+                }
+            }
+
+            connection.commit();
+            connection.setAutoCommit(true);
+            return true;
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
