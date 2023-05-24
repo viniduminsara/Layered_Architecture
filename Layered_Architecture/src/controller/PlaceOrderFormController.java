@@ -19,6 +19,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 import model.CustomerDTO;
 import model.ItemDTO;
+import model.OrderDTO;
 import model.OrderDetailDTO;
 import view.tdm.OrderDetailTM;
 
@@ -54,10 +55,10 @@ public class PlaceOrderFormController {
     public Label lblDate;
     public Label lblTotal;
     private String orderId;
-    CustomerDAO customerDAO = new CustomerDAOImpl();
-    ItemDAO itemDAO = new ItemDAOImpl();
-    OrderDAO orderDAO = new OrderDAOImpl();
-    OrderDetailsDAO orderDetailsDAO = new OrderDetailsDAOImpl();
+    CrudDAO<CustomerDTO,String> customerDAO = new CustomerDAOImpl();
+    CrudDAO<ItemDTO,String> itemDAO = new ItemDAOImpl();
+    CrudDAO<OrderDTO,String> orderDAO = new OrderDAOImpl();
+    CrudDAO<OrderDetailDTO,String> orderDetailsDAO = new OrderDetailsDAOImpl();
 
     public void initialize() throws SQLException, ClassNotFoundException {
 
@@ -104,12 +105,12 @@ public class PlaceOrderFormController {
                 try {
                     /*Search Customer*/
                     try {
-                        if (!customerDAO.existCustomer(newValue + "")) {
+                        if (!customerDAO.exist(newValue + "")) {
 //                            "There is no such customer associated with the id " + id
                             new Alert(Alert.AlertType.ERROR, "There is no such customer associated with the id " + newValue + "").show();
                         }
 
-                        CustomerDTO customerDTO = customerDAO.getCustomer(newValue);
+                        CustomerDTO customerDTO = customerDAO.get(newValue);
                         if (customerDTO != null) {
                             txtCustomerName.setText(customerDTO.getName());
                         }
@@ -133,10 +134,10 @@ public class PlaceOrderFormController {
 
                 /*Find Item*/
                 try {
-                    if (!itemDAO.existItem(newItemCode + "")) {
+                    if (!itemDAO.exist(newItemCode + "")) {
 //                        throw new NotFoundException("There is no such item associated with the id " + code);
                     }
-                    ItemDTO item = itemDAO.getItem(newItemCode);
+                    ItemDTO item = itemDAO.get(newItemCode);
                     if (item != null) {
                         txtDescription.setText(item.getDescription());
                         txtUnitPrice.setText(item.getUnitPrice().setScale(2).toString());
@@ -181,7 +182,7 @@ public class PlaceOrderFormController {
 
     public String generateNewOrderId() {
         try {
-            return orderDAO.getNewId();
+            return orderDAO.getLastId();
         } catch (SQLException e) {
             new Alert(Alert.AlertType.ERROR, "Failed to generate a new order id").show();
         } catch (ClassNotFoundException e) {
@@ -192,7 +193,7 @@ public class PlaceOrderFormController {
 
     private void loadAllCustomerIds() {
         try {
-            ArrayList<String> customers = customerDAO.getCustomerIds();
+            ArrayList<String> customers = customerDAO.getIds();
 
             for (String customer : customers) {
                 cmbCustomerId.getItems().add(customer);
@@ -207,7 +208,7 @@ public class PlaceOrderFormController {
     private void loadAllItemCodes() {
         try {
             /*Get all items*/
-            ArrayList<String> items = itemDAO.getItemIds();
+            ArrayList<String> items = itemDAO.getIds();
 
             for (String item : items) {
                 cmbItemCode.getItems().add(item);
@@ -311,12 +312,12 @@ public class PlaceOrderFormController {
             connection = DBConnection.getDbConnection().getConnection();
 
             /*if order id already exist*/
-            if (orderDAO.existsOrder(orderId)) {
+            if (orderDAO.exist(orderId)) {
                 return false;
             }
 
             connection.setAutoCommit(false);
-            boolean isSaved = orderDAO.saveOrder(orderId,orderDate,customerId);
+            boolean isSaved = orderDAO.save(new OrderDTO(orderId,orderDate,customerId));
 
             if (!isSaved) {
                 connection.rollback();
@@ -326,17 +327,17 @@ public class PlaceOrderFormController {
 
             for (OrderDetailDTO detail : orderDetails) {
 
-                boolean isDetailsSaved = orderDetailsDAO.saveOrderDetails(orderId,detail.getItemCode(),detail.getUnitPrice(),detail.getQty());
+                boolean isDetailsSaved = orderDetailsDAO.save(new OrderDetailDTO(orderId,detail.getItemCode(),detail.getQty(),detail.getUnitPrice()));
                 if (!isDetailsSaved) {
                     connection.rollback();
                     connection.setAutoCommit(true);
                     return false;
                 }
 //                //Search & Update Item
-                ItemDTO item = itemDAO.getItem(detail.getItemCode());
+                ItemDTO item = itemDAO.get(detail.getItemCode());
                 if (item != null) {
                     item.setQtyOnHand(item.getQtyOnHand() - detail.getQty());
-                    boolean isUpdated = itemDAO.updateItem(item);
+                    boolean isUpdated = itemDAO.update(item);
 
                     if (!isUpdated) {
                         connection.rollback();
