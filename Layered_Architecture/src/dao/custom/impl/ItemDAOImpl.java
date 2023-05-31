@@ -2,31 +2,31 @@ package dao.custom.impl;
 
 import dao.custom.ItemDAO;
 import dao.util.SQLUtil;
-import model.ItemDTO;
+import entity.Item;
 
 import java.sql.*;
 import java.util.ArrayList;
 
 public class ItemDAOImpl implements ItemDAO {
     @Override
-    public ArrayList<ItemDTO> getAll() throws SQLException, ClassNotFoundException {
+    public ArrayList<Item> getAll() throws SQLException, ClassNotFoundException {
         String sql = "SELECT * FROM Item";
         ResultSet rst = SQLUtil.execute(sql);
-        ArrayList<ItemDTO> items = new ArrayList<>();
+        ArrayList<Item> items = new ArrayList<>();
         while (rst.next()){
-            items.add(new ItemDTO(rst.getString(1),rst.getString(2),rst.getBigDecimal(4),rst.getInt(3)));
+            items.add(new Item(rst.getString(1),rst.getString(2),rst.getBigDecimal(4),rst.getInt(3)));
         }
         return items;
     }
 
     @Override
-    public boolean save(ItemDTO dto) throws SQLException, ClassNotFoundException {
+    public boolean save(Item dto) throws SQLException, ClassNotFoundException {
         String sql = "INSERT INTO Item (code, description, unitPrice, qtyOnHand) VALUES (?,?,?,?)";
         return SQLUtil.execute(sql,dto.getCode(),dto.getDescription(),dto.getUnitPrice(),dto.getQtyOnHand());
     }
 
     @Override
-    public boolean update(ItemDTO dto) throws SQLException, ClassNotFoundException {
+    public boolean update(Item dto) throws SQLException, ClassNotFoundException {
         String sql = "UPDATE Item SET description=?, unitPrice=?, qtyOnHand=? WHERE code=?";
         return SQLUtil.execute(sql,dto.getDescription(),dto.getUnitPrice(),dto.getQtyOnHand(),dto.getCode());
     }
@@ -58,11 +58,11 @@ public class ItemDAOImpl implements ItemDAO {
     }
 
     @Override
-    public ItemDTO get(String s) throws SQLException, ClassNotFoundException {
+    public Item get(String s) throws SQLException, ClassNotFoundException {
         String sql = "SELECT * FROM Item WHERE code=?";
         ResultSet rst = SQLUtil.execute(sql,s);
         if(rst.next()) {
-            return new ItemDTO(s + "", rst.getString("description"), rst.getBigDecimal("unitPrice"), rst.getInt("qtyOnHand"));
+            return new Item(s + "", rst.getString("description"), rst.getBigDecimal("unitPrice"), rst.getInt("qtyOnHand"));
         }
         return null;
     }

@@ -2,31 +2,31 @@ package dao.custom.impl;
 
 import dao.custom.CustomerDAO;
 import dao.util.SQLUtil;
-import model.CustomerDTO;
+import entity.Customer;
 
 import java.sql.*;
 import java.util.ArrayList;
 
 public class CustomerDAOImpl implements CustomerDAO {
     @Override
-    public ArrayList<CustomerDTO> getAll() throws SQLException, ClassNotFoundException {
+    public ArrayList<Customer> getAll() throws SQLException, ClassNotFoundException {
         String sql = "SELECT * FROM Customer";
         ResultSet rst = SQLUtil.execute(sql);
-        ArrayList<CustomerDTO> customers = new ArrayList<>();
+        ArrayList<Customer> customers = new ArrayList<>();
         while (rst.next()){
-            customers.add(new CustomerDTO(rst.getString(1),rst.getString(2),rst.getString(3)));
+            customers.add(new Customer(rst.getString(1),rst.getString(2),rst.getString(3)));
         }
         return customers;
     }
 
     @Override
-    public boolean save(CustomerDTO customer) throws SQLException, ClassNotFoundException {
+    public boolean save(Customer customer) throws SQLException, ClassNotFoundException {
         String sql = "INSERT INTO Customer (id,name, address) VALUES (?,?,?)";
         return SQLUtil.execute(sql,customer.getId(),customer.getName(),customer.getAddress());
     }
 
     @Override
-    public boolean update(CustomerDTO customerDTO) throws SQLException, ClassNotFoundException {
+    public boolean update(Customer customerDTO) throws SQLException, ClassNotFoundException {
         String sql = "UPDATE Customer SET name=?, address=? WHERE id=?";
         return SQLUtil.execute(sql,customerDTO.getName(),customerDTO.getAddress(),customerDTO.getId());
     }
@@ -58,11 +58,11 @@ public class CustomerDAOImpl implements CustomerDAO {
     }
 
     @Override
-    public CustomerDTO get(String s) throws SQLException, ClassNotFoundException {
+    public Customer get(String s) throws SQLException, ClassNotFoundException {
         String sql = "SELECT * FROM Customer WHERE id=?";
         ResultSet rst = SQLUtil.execute(sql,s);
         if(rst.next()) {
-            return new CustomerDTO(s + "", rst.getString("name"), rst.getString("address"));
+            return new Customer(s + "", rst.getString("name"), rst.getString("address"));
         }
         return null;
     }
